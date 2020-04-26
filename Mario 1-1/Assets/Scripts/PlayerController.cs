@@ -5,23 +5,54 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
 
-    private Rigidbody2D rb;
+    public Vector2 velocity;
 
-    public float speed, height = 2.0f;
+    private bool walk, walk_left, walk_right, jump;
 
-    void Start()
+    private void Start()
     {
-        speed = 100;
-        rb = GetComponent<Rigidbody2D>();
+        
     }
 
-    // Update is called once per frame
-    void FixedUpdate()
+    private void Update()
     {
-        rb.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * speed * Time.deltaTime, rb.velocity.y);
-        if(Input.GetKey(KeyCode.UpArrow) || (Input.GetKey(KeyCode.W)) || Input.GetKey(KeyCode.Space))
+        CheckPlayerInput();
+        UpdatePlayerPosition();
+    }
+
+    void UpdatePlayerPosition()
+    {
+        Vector3 pos = transform.localPosition;
+        Vector3 scale = transform.localScale;
+
+        if (walk)
         {
-            rb.velocity = new Vector2(rb.velocity.x, height);
+            if (walk_left)
+            {
+                pos.x -= velocity.x * Time.deltaTime;
+                scale.x = -1;
+            }
+            if (walk_right)
+            {
+                pos.x += velocity.x * Time.deltaTime;
+                scale.x = 1;
+            }
         }
+
+        transform.localPosition = pos;
+        transform.localScale = scale;
     }
+
+    void CheckPlayerInput()
+    {
+        bool input_left = Input.GetKey(KeyCode.LeftArrow);
+        bool input_right = Input.GetKey(KeyCode.RightArrow);
+        bool input_space = Input.GetKeyDown(KeyCode.Space);
+
+        walk = input_left || input_right;
+        walk_left = input_left && !input_right;
+        walk_right = !input_left && input_right;
+        jump = input_space;
+    }
+
 }

@@ -4,60 +4,38 @@ using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
+    public Transform target;
+    public Transform leftBounds;
+    public Transform rightBounds;
 
-    public GameObject followObject;
-    public Vector2 followOffset;
-    private Vector2 threshold;
-    public float speed = 3f;
-    private float minBoundary = 0, maxBoundary = 0;
-    private Rigidbody2D rb;
+    public float smoothDampTime = 0.15f;
+    private Vector3 smoothDampVelocity = Vector3.zero;
+
+    private float camWidth, camHeight, levelMinX, levelMaxX;
 
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        threshold = calculateThreshold();
-        rb = followObject.GetComponent<Rigidbody2D>();
-    }
+        camHeight = Camera.main.orthographicSize * 2;
+        camWidth = camHeight * Camera.main.aspect;
 
+        float leftBoundsWidth = leftBounds.GetComponentInChildren<SpriteRenderer>().bounds.size.x / 2;
+        float rightBoundsWidth = rightBounds.GetComponentInChildren<SpriteRenderer>().bounds.size.x / 2;
+
+        levelMinX = leftBounds.position.x + leftBoundsWidth + (camWidth / 2);
+        levelMaxX = rightBounds.position.x - rightBoundsWidth - (camWidth / 2);
+    }
 
     private void Update()
     {
-        Mathf.Clamp(transform.position.y, minBoundary, maxBoundary);
-    }
-
-    void FixedUpdate()
-    {
-        Vector2 follow = followObject.transform.position;
-        float xDifference = Vector2.Distance(Vector2.right * transform.position.x, Vector2.right * follow.x);
-        float yDifference = Vector2.Distance(Vector2.up * transform.position.y, Vector2.up * follow.y);
-
-        Vector3 newPosition = transform.position;
-        if(Mathf.Abs(xDifference) >= threshold.x)
+        if (target)
         {
-            newPosition.x = follow.x;
+            float targetX = Mathf.Max(levelMinX, Mathf.Min(levelMaxX, target.position.x));
+            float x = Mathf.SmoothDamp(transform.position.x, targetX, ref smoothDampVelocity.x, smoothDampTime);
+
+            transform.position = new Vector3(x, transform.position.y, transform.position.z);
         }
-        if(Mathf.Abs(yDifference) >= threshold.y)
-        {
-            newPosition.y = follow.y;
-        }
-        float moveSpeed = rb.velocity.magnitude > speed ? rb.velocity.magnitude : speed;
-        transform.position = Vector3.MoveTowards(transform.position, newPosition, moveSpeed * Time.deltaTime);
     }
 
-    private Vector3 calculateThreshold()
-    {
-        Rect aspect = Camera.main.pixelRect;
-        Vector2 t = new Vector2(Camera.main.orthographicSize * aspect.width / aspect.height, Camera.main.orthographicSize);
-        t.x -= followOffset.x;
-        t.y -= followOffset.y;
-        return t;
-    }
 
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.blue;
-        Vector2 border = calculateThreshold();
-        Gizmos.DrawWireCube(transform.position, new Vector3(border.x * 2, border.y * 2, 1));
-    }
 }
